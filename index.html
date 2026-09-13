@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>First-Price Auction Analyzer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css" />
+<style>
+  :root {
+    --bg-page: #1a1230;
+    --bg-card: #241a3d;
+    --bg-card-light: #2e2153;
+    --purple: #8b5cf6;
+    --purple-light: #a78bfa;
+    --gold: #fbbf24;
+    --gold-dark: #92400e;
+    --green: #34d399;
+    --green-dark: #065f46;
+    --red: #f87171;
+    --text-primary: #f3f0fa;
+    --text-secondary: #b8aed6;
+    --text-muted: #8478a8;
+    --border: #3d2f5f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(160deg, var(--bg-page), #0f0a1f 70%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    background: linear-gradient(90deg, var(--gold), var(--purple-light));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin: 0 0 2rem; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .upload-zone {
+    border: 2px dashed var(--purple);
+    border-radius: 14px;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(139, 92, 246, 0.06);
+    transition: background 0.2s;
+  }
+  .upload-zone:hover { background: rgba(139, 92, 246, 0.12); }
+  .upload-zone i { font-size: 32px; color: var(--gold); display: block; margin-bottom: 10px; }
+  .upload-zone p { color: var(--text-secondary); font-size: 14px; margin: 0 0 12px; }
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  button:active { transform: scale(0.97); }
+  #pick-btn { background: var(--purple); color: white; }
+  #pick-btn:hover { background: var(--purple-light); }
+  #analyze-btn {
+    width: 100%;
+    background: linear-gradient(90deg, var(--gold), #f59e0b);
+    color: #1a1230;
+    font-size: 15px;
+    padding: 13px;
+  }
+  #analyze-btn:hover { opacity: 0.9; }
+  textarea {
+    width: 100%;
+    min-height: 100px;
+    margin: 1rem 0 12px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    resize: vertical;
+  }
+  textarea::placeholder { color: var(--text-muted); }
+  .hint { display: block; font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+  .error { display: none; color: var(--red); font-size: 13px; margin: -8px 0 16px; }
+  #results { display: none; }
+  .winner-card {
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.18), rgba(139, 92, 246, 0.12));
+    border: 1px solid var(--green);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .winner-card .label { font-size: 12px; color: var(--green); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin: 0 0 6px; }
+  .winner-card .name { font-size: 26px; font-weight: 700; margin: 0 0 6px; }
+  .winner-card .detail { font-size: 14px; color: var(--text-secondary); margin: 0; }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .stat {
+    background: var(--bg-card-light);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid var(--border);
+  }
+  .stat .stat-label { font-size: 12px; color: var(--text-secondary); margin: 0 0 4px; }
+  .stat .stat-value { font-size: 22px; font-weight: 700; margin: 0; color: var(--gold); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left;
+    padding: 10px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-bottom: 2px solid var(--purple);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  thead th:not(:first-child) { text-align: right; }
+  tbody td { padding: 10px; border-bottom: 1px solid var(--border); }
+  tbody td:not(:first-child) { text-align: right; }
+  tbody tr.winner-row { background: rgba(52, 211, 153, 0.1); }
+  tbody tr.winner-row td:first-child { font-weight: 700; }
+  .trophy { color: var(--gold); margin-left: 6px; }
+  .neg { color: var(--red); }
+  .result-lost { color: var(--text-muted); }
+  .theory-note {
+    margin-top: 1.5rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--bg-card-light);
+    border-left: 3px solid var(--purple);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .theory-note strong { color: var(--text-primary); }
+  #file-input { display: none; }
+  .overflow-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><i class="ti ti-gavel"></i> First-price auction analyzer</h1>
+  <p class="subtitle">Upload the Google Form responses to see every bidder's payoff and the winner.</p>
+
+  <div class="card">
+    <div class="upload-zone" id="upload-zone">
+      <i class="ti ti-upload"></i>
+      <p>Upload the Google Form response CSV (Name, Valuation, Bid)</p>
+      <input type="file" id="file-input" accept=".csv" />
+      <button id="pick-btn" type="button">Choose CSV file</button>
+      <span class="hint">Or paste rows directly below</span>
+    </div>
+
+    <textarea id="paste-area" placeholder="Name, Valuation, Bid&#10;Rhea, 1000, 850&#10;Aman, 800, 780"></textarea>
+    <button id="analyze-btn" type="button">Analyze bids</button>
+    <p class="error" id="error-msg"></p>
+  </div>
+
+  <div id="results">
+    <div class="winner-card" id="winner-card"></div>
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="card overflow-wrap">
+      <table id="results-table"></table>
+    </div>
+    <div class="theory-note" id="theory-note"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const fileInput = document.getElementById('file-input');
+  const pickBtn = document.getElementById('pick-btn');
+  const uploadZone = document.getElementById('upload-zone');
+  const pasteArea = document.getElementById('paste-area');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const errorMsg = document.getElementById('error-msg');
+  const results = document.getElementById('results');
+
+  pickBtn.addEventListener('click', () => fileInput.click());
+  uploadZone.addEventListener('click', (e) => {
+    if (e.target === uploadZone || e.target.tagName === 'P' || e.target.tagName === 'I') fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      pasteArea.value = e.target.result;
+      analyze();
+    };
+    reader.readAsText(file);
+  });
+
+  analyzeBtn.addEventListener('click', analyze);
+
+  function parseCSV(text) {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length < 2) return { error: 'Need a header row plus at least one bidder row.' };
+
+    const splitRow = (row) => row.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    const header = splitRow(lines[0]).map(h => h.toLowerCase());
+
+    const nameIdx = header.findIndex(h => h.includes('name'));
+    const valIdx = header.findIndex(h => h.includes('valu'));
+    const bidIdx = header.findIndex(h => h.includes('bid'));
+
+    if (nameIdx === -1 || valIdx === -1 || bidIdx === -1) {
+      return { error: 'Could not find Name, Valuation, and Bid columns in the header row.' };
+    }
+
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cells = splitRow(lines[i]);
+      if (cells.length <= Math.max(nameIdx, valIdx, bidIdx)) continue;
+      const name = cells[nameIdx];
+      const valuation = parseFloat(cells[valIdx]);
+      const bid = parseFloat(cells[bidIdx]);
+      if (!name || isNaN(valuation) || isNaN(bid)) continue;
+      rows.push({ name, valuation, bid });
+    }
+
+    if (rows.length === 0) return { error: 'No valid bidder rows found — check that Valuation and Bid are numbers.' };
+    return { rows };
+  }
+
+  function analyze() {
+    errorMsg.style.display = 'none';
+    results.style.display = 'none';
+
+    const text = pasteArea.value.trim();
+    if (!text) {
+      errorMsg.textContent = 'Paste CSV rows or upload a file first.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+
+    const parsed = parseCSV(text);
+    if (parsed.error) {
+      errorMsg.textContent = parsed.error;
+      errorMsg.style.display = 'block';
+      return;
+    }
+
+    const rows = parsed.rows;
+
+    let winnerIdx = 0;
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i].bid > rows[winnerIdx].bid) winnerIdx = i;
+    }
+    const winner = rows[winnerIdx];
+
+    let theoIdx = 0;
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i].valuation > rows[theoIdx].valuation) theoIdx = i;
+    }
+    const theoWinner = rows[theoIdx];
+
+    const sortedBids = [...rows].sort((a, b) => b.bid - a.bid);
+    const secondBid = sortedBids.length > 1 ? sortedBids[1].bid : 0;
+
+    const withPayoff = rows.map((r, i) => ({
+      ...r,
+      isWinner: i === winnerIdx,
+      payoff: i === winnerIdx ? r.valuation - r.bid : 0,
+      overbid: r.bid > r.valuation
+    }));
+
+    const fmt = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n * 100) / 100);
+
+    document.getElementById('winner-card').innerHTML = `
+      <p class="label"><i class="ti ti-trophy"></i> Winner</p>
+      <p class="name">${winner.name}</p>
+      <p class="detail">Won with a bid of ₹${fmt(winner.bid)} (valued the item at ₹${fmt(winner.valuation)}) — payoff ₹${fmt(winner.valuation - winner.bid)}</p>
+    `;
+
+    document.getElementById('stat-grid').innerHTML = `
+      <div class="stat"><p class="stat-label">Bidders</p><p class="stat-value">${rows.length}</p></div>
+      <div class="stat"><p class="stat-label">Winning bid</p><p class="stat-value">₹${fmt(winner.bid)}</p></div>
+      <div class="stat"><p class="stat-label">2nd-highest bid</p><p class="stat-value">₹${fmt(secondBid)}</p></div>
+      <div class="stat"><p class="stat-label">Winner's payoff</p><p class="stat-value">₹${fmt(winner.valuation - winner.bid)}</p></div>
+    `;
+
+    const table = document.getElementById('results-table');
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Bidder</th>
+          <th>Valuation (v)</th>
+          <th>Bid (x)</th>
+          <th>Payoff (v − x if won)</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${withPayoff.map(r => `
+          <tr class="${r.isWinner ? 'winner-row' : ''}">
+            <td>${r.name}${r.isWinner ? ' <i class="ti ti-trophy trophy"></i>' : ''}</td>
+            <td>₹${fmt(r.valuation)}</td>
+            <td>₹${fmt(r.bid)}</td>
+            <td class="${r.payoff < 0 ? 'neg' : ''}">${r.isWinner ? '₹' + fmt(r.payoff) : '₹0'}</td>
+            <td class="result-lost">${r.isWinner ? 'Won' : (r.overbid ? 'Lost (bid above own valuation)' : 'Lost')}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+
+    const matchesTheory = winnerIdx === theoIdx;
+    document.getElementById('theory-note').innerHTML = matchesTheory
+      ? `<strong>Matches theory:</strong> ${theoWinner.name} also has the highest valuation (₹${fmt(theoWinner.valuation)}) among all bidders — exactly what the N-person first-price auction equilibrium predicts: the highest-valuation bidder always wins.`
+      : `<strong>Deviates from theory:</strong> ${theoWinner.name} had the highest valuation (₹${fmt(theoWinner.valuation)}), but ${winner.name} won on bid amount instead. In equilibrium the highest-valuation bidder should always win — this gap is a good discussion point on how real bidders don't always play the equilibrium strategy.`;
+
+    results.style.display = 'block';
+  }
+})();
+</script>
+</body>
+</html>
